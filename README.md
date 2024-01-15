@@ -1,5 +1,6 @@
 # Deployment of BEV 3D Detection on TensorRT
 
+### modified for easy setup 
 This repository is a deployment project of BEV 3D Detection (including [BEVFormer](https://github.com/fundamentalvision/BEVFormer), [BEVDet](https://github.com/HuangJunJie2017/BEVDet)) on [TensorRT](https://developer.nvidia.com/tensorrt), supporting **FP32/FP16/INT8** inference. Meanwhile, in order to improve the inference speed of BEVFormer on TensorRT, this project implements some TensorRT Ops that support [**nv_half**](https://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH____HALF__ARITHMETIC.html#group__CUDA__MATH____HALF__ARITHMETIC),  [**nv_half2**](https://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH____HALF2__ARITHMETIC.html#group__CUDA__MATH____HALF2__ARITHMETIC) and **INT8**. With the accuracy almost unaffected, the inference speed of the **BEVFormer base** can be increased by more than **four times**, the engine size can be reduced by more than **90%**, and the GPU memory usage can be saved by more than **80%**. In addition, the project also supports common 2D object detection models in [MMDetection](https://github.com/open-mmlab/mmdetection), which support **INT8 Quantization** and **TensorRT Deployment** with a small number of code changes.
 
 ## Benchmarks
@@ -110,7 +111,7 @@ This project also supports common 2D object detection models in MMDetection with
 ## Clone
 
 ```shell
-git clone git@github.com:DerryHub/BEVFormer_tensorrt.git
+git clone git@github.com:donghe4/BEVFormer_tensorrt.git
 cd BEVFormer_tensorrt
 PROJECT_DIR=$(pwd)
 ```
@@ -168,138 +169,32 @@ ${PROJECT_DIR}/data/.
 
 ```shell
 cd ${PROJECT_DIR}
-docker build -t trt85 -f docker/Dockerfile .
-docker run -it --gpus all -v ${PROJECT_DIR}:/workspace/BEVFormer_tensorrt/ \
+docker run -it --gpus all -v ./:/workspace/BEVFormer_tensorrt/ \
 -v /path/to/can_bus:/workspace/BEVFormer_tensorrt/data/can_bus \
 -v /path/to/coco:/workspace/BEVFormer_tensorrt/data/coco \
 -v /path/to/nuscenes:/workspace/BEVFormer_tensorrt/data/nuscenes \
---shm-size 8G trt85 /bin/bash
+--shm-size=16G \
+--privileged \
+--network=host \
+--user root \
+hadonga/bev_trt:1.0 /bin/bash
+```
 
-# in container
+### In container
+```shell
+# Build and Install Custom TensorRT Plugins
 cd /workspace/BEVFormer_tensorrt/TensorRT/build
 cmake .. -DCMAKE_TENSORRT_PATH=/usr
 make -j$(nproc)
 make install
+
+# Build and Install Part of Ops in MMDetection3D
 cd /workspace/BEVFormer_tensorrt/third_party/bev_mmdet3d
 python setup.py build develop --user
-```
 
-**NOTE:** You can download the **Docker Image** [HERE](https://pan.baidu.com/s/1dPR6kvgpUoKow51870KNug?pwd=6xkq).
-
-### From Source
-
-#### CUDA/cuDNN/TensorRT
-
-Download and install the `CUDA-11.6/cuDNN-8.6.0/TensorRT-8.5.1.7` following [NVIDIA](https://www.nvidia.com/en-us/).
-
-#### PyTorch
-
-Install PyTorch and TorchVision following the [official instructions](https://pytorch.org/get-started/locally/).
-
-```shell
-pip install torch==1.12.1+cu116 torchvision==0.13.1+cu116 torchaudio==0.12.1+cu116 --extra-index-url https://download.pytorch.org/whl/cu116
-```
-
-#### MMCV-full
-
-```shell
-git clone https://github.com/open-mmlab/mmcv.git
-cd mmcv
-git checkout v1.5.0
-pip install -r requirements/optional.txt
-MMCV_WITH_OPS=1 pip install -e .
-```
-
-#### MMDetection
-
-```shell
-git clone https://github.com/open-mmlab/mmdetection.git
-cd mmdetection
-git checkout v2.25.1
-pip install -v -e .
-# "-v" means verbose, or more output
-# "-e" means installing a project in editable mode,
-# thus any local modifications made to the code will take effect without reinstallation.
-```
-
-#### MMDeploy
-
-```shell
-git clone git@github.com:open-mmlab/mmdeploy.git
-cd mmdeploy
-git checkout v0.10.0
-
-git clone git@github.com:NVIDIA/cub.git third_party/cub
-cd third_party/cub
-git checkout c3cceac115
-
-# go back to third_party directory and git clone pybind11
-cd ..
-git clone git@github.com:pybind/pybind11.git pybind11
-cd pybind11
-git checkout 70a58c5
-```
-
-##### Build TensorRT Plugins of MMDeploy
-
-**Make sure cmake version >= 3.14.0 and gcc version >= 7.**
-
-```shell
-export MMDEPLOY_DIR=/the/root/path/of/MMDeploy
-export TENSORRT_DIR=/the/path/of/tensorrt
-export CUDNN_DIR=/the/path/of/cuda
-
-export LD_LIBRARY_PATH=$TENSORRT_DIR/lib:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=$CUDNN_DIR/lib64:$LD_LIBRARY_PATH
-
-cd ${MMDEPLOY_DIR}
-mkdir -p build
-cd build
-cmake -DCMAKE_CXX_COMPILER=g++-7 -DMMDEPLOY_TARGET_BACKENDS=trt -DTENSORRT_DIR=${TENSORRT_DIR} -DCUDNN_DIR=${CUDNN_DIR} ..
-make -j$(nproc) 
-make install
-```
-
-##### Install MMDeploy
-
-```shell
-cd ${MMDEPLOY_DIR}
-pip install -v -e .
-# "-v" means verbose, or more output
-# "-e" means installing a project in editable mode,
-# thus any local modifications made to the code will take effect without reinstallation.
-```
-
-#### Install this Project
-
-```shell
-cd ${PROJECT_DIR}
-pip install -r requirements.txt
-```
-
-##### Build and Install Custom TensorRT Plugins
-
-**NOTE: CUDA>=11.4, SM version>=7.5**
-
-```shell
-cd ${PROJECT_DIR}/TensorRT/build
-cmake .. -DCMAKE_TENSORRT_PATH=/path/to/TensorRT
-make -j$(nproc)
-make install
-```
-
-**Run Unit Test of  Custom TensorRT Plugins**
-
-```shell
+# Run Unit Test of  Custom TensorRT Plugins
 cd ${PROJECT_DIR}
 sh samples/test_trt_ops.sh
-```
-
-##### Build and Install Part of Ops in MMDetection3D
-
-```shell
-cd ${PROJECT_DIR}/third_party/bev_mmdet3d
-python setup.py build develop
 ```
 
 #### Prepare the Checkpoints
