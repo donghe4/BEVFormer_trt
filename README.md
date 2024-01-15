@@ -166,7 +166,11 @@ ${PROJECT_DIR}/data/.
 ## Install
 
 ### With Docker
-
+ - Quick start
+```shell
+bash run_docker.sh
+```
+- Alternative 
 ```shell
 cd ${PROJECT_DIR}
 docker run -it --gpus all -v ./:/workspace/BEVFormer_tensorrt/ \
@@ -182,6 +186,11 @@ hadonga/bev_trt:1.0 /bin/bash
 
 ### In container
 ```shell
+# [dhe] test docker image first. if test is sccuessful, there is no need for following installation. 
+# Run Unit Test of  Custom TensorRT Plugins
+cd ${PROJECT_DIR}
+sh samples/test_trt_ops.sh
+
 # Build and Install Custom TensorRT Plugins
 cd /workspace/BEVFormer_tensorrt/TensorRT/build
 cmake .. -DCMAKE_TENSORRT_PATH=/usr
@@ -191,10 +200,6 @@ make install
 # Build and Install Part of Ops in MMDetection3D
 cd /workspace/BEVFormer_tensorrt/third_party/bev_mmdet3d
 python setup.py build develop --user
-
-# Run Unit Test of  Custom TensorRT Plugins
-cd ${PROJECT_DIR}
-sh samples/test_trt_ops.sh
 ```
 
 #### Prepare the Checkpoints
