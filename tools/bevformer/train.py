@@ -41,7 +41,7 @@ def parse_args():
     group_gpus.add_argument(
         "--gpus",
         type=int,
-        help="number of gpus to use " "(only applicable to non-distributed training)",
+        help="number of gpus to use " "(only applicable to non-distributed training)"
     )
     group_gpus.add_argument(
         "--gpu-ids",
@@ -245,5 +245,7 @@ def main():
 
 
 if __name__ == "__main__":
-    torch.multiprocessing.set_start_method("fork")
+    if not torch.multiprocessing.get_start_method(allow_none=True):
+        torch.multiprocessing.set_start_method("fork")
+    # torch.multiprocessing.set_start_method("fork")
     main()

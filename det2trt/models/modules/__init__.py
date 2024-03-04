@@ -1,6 +1,7 @@
 from .transformer import PerceptionTransformerTRT
 from .encoder import BEVFormerEncoderTRT
 from .temporal_self_attention import TemporalSelfAttentionTRT
+from .temporal_self_attention_moon import TemporalSelfAttentionNAT
 from .spatial_cross_attention import (
     SpatialCrossAttentionTRT,
     MSDeformableAttention3DTRT,
