@@ -199,6 +199,9 @@ class PerceptionTransformer(BaseModule):
             0, 2, 1, 3
         )  # (num_cam, H*W, bs, embed_dims)
 
+        # # add reg token to number of patches? 
+        # feat_flatten = torch.cat([feat_flatten, reg_token], dim = 1)  # (num_cam, H*W + reg_toekn, bs, embed_dims)
+
         bev_embed = self.encoder(
             bev_queries,
             feat_flatten,
